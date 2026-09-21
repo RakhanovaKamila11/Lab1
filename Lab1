@@ -1,0 +1,104 @@
+#include <windows.h>
+#include <wchar.h>
+
+LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
+    switch (message) {
+    case WM_PAINT: {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hWnd, &ps);
+
+        int cursorWidth = GetSystemMetrics(SM_CXCURSOR);
+        int cursorHeight = GetSystemMetrics(SM_CYCURSOR);
+
+        RECT clientRect;
+        GetClientRect(hWnd, &clientRect);
+        int clientWidth = clientRect.right - clientRect.left;
+        int clientHeight = clientRect.bottom - clientRect.top;
+
+        SetBkMode(hdc, TRANSPARENT);
+        SetTextColor(hdc, RGB(255, 255, 255));
+
+        wchar_t buffer[256];
+        swprintf_s(buffer, L"Ширина курсору: %d px", cursorWidth);
+        TextOutW(hdc, 20, 20, buffer, (int)wcslen(buffer));
+
+        swprintf_s(buffer, L"Висота курсору: %d px", cursorHeight);
+        TextOutW(hdc, 20, 50, buffer, (int)wcslen(buffer));
+
+        swprintf_s(buffer, L"Ширина клієнтської області: %d px", clientWidth);
+        TextOutW(hdc, 20, 80, buffer, (int)wcslen(buffer));
+
+        swprintf_s(buffer, L"Висота клієнтської області: %d px", clientHeight);
+        TextOutW(hdc, 20, 110, buffer, (int)wcslen(buffer));
+
+        EndPaint(hWnd, &ps);
+        break;
+    }
+    case WM_SIZE:
+        InvalidateRect(hWnd, NULL, TRUE);
+        break;
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        break;
+    default:
+        return DefWindowProc(hWnd, message, wParam, lParam);
+    }
+    return 0;
+}
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+    WNDCLASSW wc = {};
+
+    wc.style = CS_HREDRAW | CS_VREDRAW | CS_NOCLOSE;
+    wc.hIcon = LoadIcon(NULL, IDI_WINLOGO);
+    wc.hCursor = LoadCursor(NULL, IDC_SIZEALL);
+    wc.hbrBackground = (HBRUSH)GetStockObject(DKGRAY_BRUSH);
+    wc.lpszClassName = L"Kamila Rakhanova";
+    wc.lpfnWndProc = WndProc;
+    wc.hInstance = hInstance;
+
+    if (!RegisterClassW(&wc)) {
+        return 0;
+    }
+
+    DWORD windowStyle = WS_HSCROLL | WS_OVERLAPPEDWINDOW;
+
+    int xPos = 50;
+    int yPos = 90;
+
+    RECT desiredClientRect = { 0, 0, 400, 500 };
+
+    AdjustWindowRect(&desiredClientRect, windowStyle, FALSE);
+
+    int windowWidth = desiredClientRect.right - desiredClientRect.left;
+
+    int windowHeight = (desiredClientRect.bottom - desiredClientRect.top) + GetSystemMetrics(SM_CYHSCROLL);
+
+    HWND hWnd = CreateWindowExW(
+        0,
+        wc.lpszClassName,
+        L"Lab1 - Variant 4",
+        windowStyle,
+        xPos, yPos,
+        windowWidth, windowHeight,
+        NULL,
+        NULL,
+        hInstance,
+        NULL
+    );
+
+    if (hWnd == NULL) {
+        return 0;
+    }
+
+    ShowWindow(hWnd, nCmdShow);
+    UpdateWindow(hWnd);
+
+    MSG msg = {};
+    while (GetMessage(&msg, NULL, 0, 0)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+
+    return (int)msg.wParam;
+}
